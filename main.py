@@ -80,9 +80,10 @@ def create_missing_playlists(missing_playlists):
                 i += 1
             except FileNotFoundError:
                 song.lookup_error = True
-                not_found_songs.append(temp)
+                not_found_songs.append(song)
         for song in not_found_songs:
-            print(song.name)
+            print(song.title)
+        write_missing_songs_to_file(not_found_songs, playlist.name)
         print(f"{len(not_found_songs)} {'song' if len(not_found_songs) == 1 else 'songs'} not found")
         print(f"Created playlist '{playlist.name}' with {i} songs")
 
@@ -108,25 +109,24 @@ def read_specific_line(filepath, line_number):
     return ''  # Return None if the line number does not exist
 
 
-def download_missing_songs(missing_songs, playlist_name):
-    local_dir_name = f"{local_path}{playlist_name}"
+def download_missing_songs(missing_songs, playlist):
+    local_dir_name = f"{local_path}{playlist.name}"
     for i in range(0, len(missing_songs)):
-        line_content = read_specific_line(f'playlists_info/{playlist_name}_missing.txt', i + 1).split(',')
+        line_content = read_specific_line(f'playlists_info/{playlist.name}_missing.txt', i + 1).split(',')
         if missing_songs[i].lookup_error or line_content[-1] == '1':
             print(f'Skipping {missing_songs[i].title}: LookupError')
             missing_songs[i].lookup_error = True
             continue
         else:
             temp = Song.from_url(missing_songs[i].link)
+            temp.name = sanitize_filename(temp.name)
             try:
                 result = dwnld.download_song(temp)
                 base_directory = os.path.dirname(os.path.abspath(__file__))
                 file_path = os.path.join(base_directory, f"{sanitize_filename(result[0].name)}.mp3")
-                print(result[0].name)
-                print(sanitize_filename(result[0].name))
-                print(file_path)
                 shutil.move(file_path,
                             f"{local_dir_name}/{sanitize_filename(result[0].name)}.mp3")
+                playlist.songs.append(missing_songs[i])
             except FileNotFoundError:
                 missing_songs[i].lookup_error = True
 
@@ -138,7 +138,7 @@ def check_missing_songs(spotify_playlists, playlists):
         local_playlist = playlists_sorted[i]
         spotify_playlist = spotify_playlists_sorted[i]
         missing_songs = find_missing_songs(local_playlist.songs, spotify_playlist.songs)
-        download_missing_songs(missing_songs, local_playlist.name)
+        download_missing_songs(missing_songs, local_playlist)
         write_missing_songs_to_file(find_missing_songs(local_playlist.songs, spotify_playlist.songs),
                                     spotify_playlist.name)
 
