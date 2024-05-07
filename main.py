@@ -13,12 +13,6 @@ import glob
 import tekore as tk
 import shutil
 
-auth = "8c348c85dc414a49948f3271af0331c3:9f1034ea825246759a5d8c0c48ebc85d"
-data = {
-    "grant_type": f"client_credentials",
-    "client_id": "8c348c85dc414a49948f3271af0331c3",
-    "client_secret": "9f1034ea825246759a5d8c0c48ebc85d"
-}
 headers = {
     "Content-Type": f"application/x-www-form-urlencoded"
 }
@@ -183,6 +177,11 @@ def get_creds():
 
 def main():
     get_creds()
+    data = {
+        "grant_type": f"client_credentials",
+        "client_id": f"{client_id}",
+        "client_secret": f"{client_secret}"
+    }
     playlists = get_downloaded_songs()
     spotify.SpotifyClient.init(client_id, client_secret)
     r = requests.post(f"https://accounts.spotify.com/api/token", data=data, headers=headers)
